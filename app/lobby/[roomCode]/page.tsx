@@ -26,7 +26,7 @@ export default function LobbyPage() {
   const router = useRouter();
   const roomCode = params.roomCode as string;
   const [room, setRoom] = useState<Room | null>(null);
-  const [playerCount, setPlayerCount] = useState(170);
+  const [playerCount, setPlayerCount] = useState(200);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState<any>(null);
 
@@ -132,7 +132,7 @@ export default function LobbyPage() {
                 <input
                   type="range"
                   min="40"
-                   max="170"
+                    max="200"
                   step="10"
                   value={playerCount}
                   onChange={(e) => setPlayerCount(parseInt(e.target.value))}

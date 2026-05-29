@@ -21,6 +21,7 @@ export interface Player {
   ipl: PlayerStats;
   t20i: PlayerStats;
   country: string;
+  era?: string;
 }
 
 export const topTierPlayers: Player[] = [
@@ -205,7 +206,40 @@ export const budgetPlayers: Player[] = [
   { id: '170', name: 'Arshin Kulkarni', role: 'AR', basePrice: 0.5, ipl: { matches: 8, runs: 95, avg: 15.83, sr: 122.45, wickets: 4, economy: 8.98, bowlAvg: 36.50, bowlSr: 24.50 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0, wickets: 0, economy: 0 }, country: 'India' },
 ];
 
-export const allPlayers = [...topTierPlayers, ...premiumPlayers, ...midTierPlayers, ...budgetPlayers];
+export const legendPlayers: Player[] = [
+  { id: 'L1', name: 'Sachin Tendulkar', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 78, runs: 2334, avg: 34.83, sr: 119.82, fifties: 13, hundreds: 1 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
+  { id: 'L2', name: 'Sourav Ganguly', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 59, runs: 1349, avg: 26.45, sr: 116.76, fifties: 7, hundreds: 0 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
+  { id: 'L3', name: 'Rahul Dravid', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 89, runs: 2174, avg: 31.97, sr: 110.56, fifties: 13, hundreds: 0 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
+  { id: 'L4', name: 'VVS Laxman', role: 'BAT', basePrice: 1.5, era: 'legend', ipl: { matches: 10, runs: 242, avg: 26.89, sr: 117.47, fifties: 1, hundreds: 0 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
+  { id: 'L5', name: 'Virender Sehwag', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 104, runs: 2728, avg: 27.00, sr: 153.80, fifties: 15, hundreds: 1 }, t20i: { matches: 19, runs: 394, avg: 21.90, sr: 145.02, fifties: 2, hundreds: 0 }, country: 'India' },
+  { id: 'L6', name: 'Yuvraj Singh', role: 'AR', basePrice: 2, era: 'legend', ipl: { matches: 132, runs: 2750, avg: 28.93, sr: 136.63, wickets: 38, economy: 7.87, fifties: 14, hundreds: 0 }, t20i: { matches: 58, runs: 1177, avg: 25.58, sr: 136.55, wickets: 28, economy: 7.26, fifties: 8, hundreds: 0 }, country: 'India' },
+  { id: 'L7', name: 'Harbhajan Singh', role: 'BOWL', basePrice: 1.5, era: 'legend', ipl: { matches: 163, wickets: 150, economy: 7.05, bowlAvg: 26.29, bowlSr: 22.38 }, t20i: { matches: 28, wickets: 25, economy: 6.89, bowlAvg: 20.44, bowlSr: 17.76 }, country: 'India' },
+  { id: 'L8', name: 'Zaheer Khan', role: 'BOWL', basePrice: 1.5, era: 'legend', ipl: { matches: 100, wickets: 102, economy: 7.59, bowlAvg: 23.72, bowlSr: 18.73 }, t20i: { matches: 17, wickets: 17, economy: 7.62, bowlAvg: 22.00, bowlSr: 17.29 }, country: 'India' },
+  { id: 'L9', name: 'Gautam Gambhir', role: 'BAT', basePrice: 1.5, era: 'legend', ipl: { matches: 154, runs: 4217, avg: 31.23, sr: 123.89, fifties: 34, hundreds: 0 }, t20i: { matches: 37, runs: 932, avg: 27.41, sr: 119.24, fifties: 7, hundreds: 0 }, country: 'India' },
+  { id: 'L10', name: 'Suresh Raina', role: 'AR', basePrice: 2, era: 'legend', ipl: { matches: 205, runs: 5528, avg: 32.52, sr: 136.76, wickets: 36, economy: 7.46, fifties: 39, hundreds: 1 }, t20i: { matches: 78, runs: 1605, avg: 29.18, sr: 134.87, wickets: 28, economy: 7.86, fifties: 10, hundreds: 0 }, country: 'India' },
+  { id: 'L11', name: 'Irfan Pathan', role: 'AR', basePrice: 1.5, era: 'legend', ipl: { matches: 96, runs: 1144, avg: 17.87, sr: 118.47, wickets: 76, economy: 7.57, bowlAvg: 26.49, bowlSr: 20.96 }, t20i: { matches: 24, runs: 172, avg: 10.75, sr: 100.00, wickets: 28, economy: 7.68, bowlAvg: 19.32, bowlSr: 15.07 }, country: 'India' },
+  { id: 'L12', name: 'AB de Villiers', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 184, runs: 5162, avg: 39.70, sr: 151.69, fifties: 40, hundreds: 3 }, t20i: { matches: 78, runs: 1672, avg: 26.46, sr: 134.87, fifties: 10, hundreds: 0 }, country: 'South Africa' },
+  { id: 'L13', name: 'Chris Gayle', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 141, runs: 4954, avg: 40.11, sr: 149.70, fifties: 36, hundreds: 6 }, t20i: { matches: 58, runs: 1899, avg: 38.76, sr: 145.42, fifties: 14, hundreds: 2 }, country: 'West Indies' },
+  { id: 'L14', name: 'Kieron Pollard', role: 'AR', basePrice: 2, era: 'legend', ipl: { matches: 203, runs: 3417, avg: 28.22, sr: 137.98, wickets: 35, economy: 8.63, fifties: 17, hundreds: 0 }, t20i: { matches: 90, runs: 1368, avg: 22.44, sr: 135.40, wickets: 16, economy: 7.78 }, country: 'West Indies' },
+  { id: 'L15', name: 'Lasith Malinga', role: 'BOWL', basePrice: 2, era: 'legend', ipl: { matches: 122, wickets: 170, economy: 7.14, bowlAvg: 19.80, bowlSr: 16.64 }, t20i: { matches: 84, wickets: 107, economy: 7.73, bowlAvg: 20.12, bowlSr: 15.59 }, country: 'Sri Lanka' },
+  { id: 'L16', name: 'Kumar Sangakkara', role: 'WK', basePrice: 2, era: 'legend', ipl: { matches: 71, runs: 2070, avg: 31.36, sr: 118.23, fifties: 15, hundreds: 1 }, t20i: { matches: 56, runs: 1382, avg: 27.09, sr: 120.38, fifties: 8, hundreds: 0 }, country: 'Sri Lanka' },
+  { id: 'L17', name: 'Mahela Jayawardena', role: 'BAT', basePrice: 1.5, era: 'legend', ipl: { matches: 91, runs: 2390, avg: 30.64, sr: 127.82, fifties: 18, hundreds: 0 }, t20i: { matches: 55, runs: 1016, avg: 22.13, sr: 126.68, fifties: 5, hundreds: 0 }, country: 'Sri Lanka' },
+  { id: 'L18', name: 'Muttiah Muralitharan', role: 'BOWL', basePrice: 1.5, era: 'legend', ipl: { matches: 66, wickets: 63, economy: 6.67, bowlAvg: 25.56, bowlSr: 23.00 }, t20i: { matches: 12, wickets: 13, economy: 5.95, bowlAvg: 17.77, bowlSr: 17.92 }, country: 'Sri Lanka' },
+  { id: 'L19', name: 'Shane Bond', role: 'BOWL', basePrice: 1.5, era: 'legend', ipl: { matches: 19, wickets: 22, economy: 6.26, bowlAvg: 15.86, bowlSr: 15.18 }, t20i: { matches: 18, wickets: 25, economy: 5.76, bowlAvg: 14.00, bowlSr: 14.56 }, country: 'New Zealand' },
+  { id: 'L20', name: 'Daniel Vettori', role: 'AR', basePrice: 1.5, era: 'legend', ipl: { matches: 55, runs: 426, avg: 15.77, sr: 96.81, wickets: 43, economy: 6.29, bowlAvg: 22.30, bowlSr: 21.26 }, t20i: { matches: 34, runs: 179, avg: 11.93, sr: 91.33, wickets: 38, economy: 6.10, bowlAvg: 17.84, bowlSr: 17.52 }, country: 'New Zealand' },
+  { id: 'L21', name: 'Shaun Pollock', role: 'AR', basePrice: 1.5, era: 'legend', ipl: { matches: 22, runs: 180, avg: 15.00, sr: 101.69, wickets: 22, economy: 6.85, bowlAvg: 19.18, bowlSr: 16.82 }, t20i: { matches: 12, runs: 56, avg: 8.00, sr: 93.33, wickets: 11, economy: 6.42, bowlAvg: 17.36, bowlSr: 16.18 }, country: 'South Africa' },
+  { id: 'L22', name: 'Shoaib Akhtar', role: 'BOWL', basePrice: 1.5, era: 'legend', ipl: { matches: 6, wickets: 5, economy: 7.83, bowlAvg: 30.20, bowlSr: 23.20 }, t20i: { matches: 15, wickets: 13, economy: 7.00, bowlAvg: 21.00, bowlSr: 18.00 }, country: 'Pakistan' },
+  { id: 'L23', name: 'Herschelle Gibbs', role: 'BAT', basePrice: 1, era: 'legend', ipl: { matches: 53, runs: 1298, avg: 27.61, sr: 140.17, fifties: 9, hundreds: 1 }, t20i: { matches: 23, runs: 481, avg: 22.90, sr: 135.77, fifties: 3, hundreds: 0 }, country: 'South Africa' },
+  { id: 'L24', name: 'Chaminda Vaas', role: 'BOWL', basePrice: 1, era: 'legend', ipl: { matches: 18, wickets: 18, economy: 7.38, bowlAvg: 26.00, bowlSr: 21.17 }, t20i: { matches: 6, wickets: 5, economy: 7.20, bowlAvg: 22.40, bowlSr: 18.60 }, country: 'Sri Lanka' },
+  { id: 'L25', name: 'Matthew Hayden', role: 'BAT', basePrice: 1, era: 'legend', ipl: { matches: 30, runs: 572, avg: 21.18, sr: 120.67, fifties: 4, hundreds: 0 }, t20i: { matches: 9, runs: 206, avg: 25.75, sr: 125.61, fifties: 1, hundreds: 0 }, country: 'Australia' },
+  { id: 'L26', name: 'Adam Gilchrist', role: 'WK', basePrice: 2, era: 'legend', ipl: { matches: 71, runs: 1812, avg: 26.64, sr: 142.26, fifties: 12, hundreds: 1 }, t20i: { matches: 13, runs: 338, avg: 28.17, sr: 139.09, fifties: 2, hundreds: 0 }, country: 'Australia' },
+  { id: 'L27', name: 'Brendon McCullum', role: 'WK', basePrice: 2, era: 'legend', ipl: { matches: 109, runs: 2880, avg: 30.97, sr: 131.92, fifties: 20, hundreds: 1 }, t20i: { matches: 71, runs: 2140, avg: 35.67, sr: 136.39, fifties: 13, hundreds: 2 }, country: 'New Zealand' },
+  { id: 'L28', name: 'Jacques Kallis', role: 'AR', basePrice: 2, era: 'legend', ipl: { matches: 98, runs: 2427, avg: 33.29, sr: 111.63, wickets: 18, economy: 7.55, fifties: 20, hundreds: 0 }, t20i: { matches: 38, runs: 666, avg: 22.20, sr: 102.15, wickets: 12, economy: 7.25, fifties: 3, hundreds: 0 }, country: 'South Africa' },
+  { id: 'L29', name: 'Tillakaratne Dilshan', role: 'AR', basePrice: 1.5, era: 'legend', ipl: { matches: 66, runs: 1513, avg: 24.40, sr: 125.52, wickets: 15, economy: 7.20, fifties: 10, hundreds: 0 }, t20i: { matches: 80, runs: 1889, avg: 28.19, sr: 122.54, wickets: 21, economy: 7.06, fifties: 14, hundreds: 0 }, country: 'Sri Lanka' },
+  { id: 'L30', name: 'Ricky Ponting', role: 'BAT', basePrice: 1.5, era: 'legend', ipl: { matches: 66, runs: 1444, avg: 27.24, sr: 117.84, fifties: 11, hundreds: 0 }, t20i: { matches: 17, runs: 401, avg: 26.73, sr: 111.97, fifties: 3, hundreds: 0 }, country: 'Australia' },
+];
+
+export const allPlayers = [...topTierPlayers, ...premiumPlayers, ...midTierPlayers, ...budgetPlayers, ...legendPlayers];
 
 export function getRandomPlayers(count: number): Player[] {
   const shuffled = [...allPlayers].sort(() => Math.random() - 0.5);
