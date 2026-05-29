@@ -54,7 +54,20 @@ export default function AuctionPage() {
   const [soldPlayers, setSoldPlayers] = useState<any[]>([]);
   const [roomInfo, setRoomInfo] = useState<Room>({ hostId: '', isPaused: false });
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const toggleTeamSquad = (teamId: string) => {
+    setExpandedTeams(prev => {
+      const next = new Set(prev);
+      if (next.has(teamId)) {
+        next.delete(teamId);
+      } else {
+        next.add(teamId);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const s = getSocket();
@@ -368,31 +381,35 @@ export default function AuctionPage() {
                   </span>
                 </div>
                 {team.squad.length > 0 && (
-                  <div className="mt-2 text-xs">
-                    <span className="text-[var(--text-muted)]">Squad: </span>
-                    <div className="flex flex-col gap-1 mt-1">
-                      {team.squad.slice(0, 8).map(playerId => {
-                        const player = getPlayerById(playerId);
-                        if (!player) return null;
-                        const roleLabel = player.role === 'BAT' ? 'Batsman' : player.role === 'BOWL' ? 'Bowler' : player.role === 'WK' ? 'Wicket Keeper' : 'All-rounder';
-                        return (
-                          <div key={playerId} className="flex items-center gap-2">
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              player.role === 'BAT' ? 'bg-blue-500/20 text-blue-400' :
-                              player.role === 'BOWL' ? 'bg-red-500/20 text-red-400' :
-                              player.role === 'WK' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-green-500/20 text-green-400'
-                            }`}>
-                              {roleLabel}
-                            </span>
-                            <span className="text-[var(--text-secondary)] text-sm">{player.name}</span>
-                          </div>
-                        );
-                      })}
-                      {team.squad.length > 8 && (
-                        <span className="px-1.5 py-0.5 text-[var(--text-muted)] text-xs">+{team.squad.length - 8} more</span>
-                      )}
-                    </div>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => toggleTeamSquad(team.id)}
+                      className="w-full text-xs text-[var(--accent-purple)] hover:text-[var(--accent-purple-light)] transition-colors font-semibold py-1.5 rounded-lg bg-[var(--bg-primary)]/30 hover:bg-[var(--bg-primary)]/50"
+                    >
+                      {expandedTeams.has(team.id) ? 'Hide Squad ▲' : `Show Squad (${team.squad.length}) ▼`}
+                    </button>
+                    {expandedTeams.has(team.id) && (
+                      <div className="flex flex-col gap-1 mt-2 max-h-48 overflow-y-auto">
+                        {team.squad.map(playerId => {
+                          const player = getPlayerById(playerId);
+                          if (!player) return null;
+                          const roleLabel = player.role === 'BAT' ? 'BAT' : player.role === 'BOWL' ? 'BOWL' : player.role === 'WK' ? 'WK' : 'AR';
+                          return (
+                            <div key={playerId} className="flex items-center gap-2 py-1">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                player.role === 'BAT' ? 'bg-blue-500/20 text-blue-400' :
+                                player.role === 'BOWL' ? 'bg-red-500/20 text-red-400' :
+                                player.role === 'WK' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                {roleLabel}
+                              </span>
+                              <span className="text-[var(--text-secondary)] text-sm truncate">{player.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
                 {!team.isActive && (
@@ -486,8 +503,8 @@ export default function AuctionPage() {
                               <p className="text-base">{currentPlayer.ipl.runs || 0} runs</p>
                               <p className="text-sm opacity-80">{currentPlayer.ipl.avg || 0} average</p>
                               <p className="text-sm opacity-80">{currentPlayer.ipl.sr || 0} strike rate</p>
-                              {currentPlayer.ipl.fifties > 0 && <p className="text-sm opacity-80">{currentPlayer.ipl.fifties} fifties</p>}
-                              {currentPlayer.ipl.hundreds > 0 && <p className="text-sm opacity-80">{currentPlayer.ipl.hundreds} hundreds</p>}
+                              {(currentPlayer.ipl.fifties ?? 0) > 0 && <p className="text-sm opacity-80">{currentPlayer.ipl.fifties} fifties</p>}
+                              {(currentPlayer.ipl.hundreds ?? 0) > 0 && <p className="text-sm opacity-80">{currentPlayer.ipl.hundreds} hundreds</p>}
                               {currentPlayer.role === 'AR' && currentPlayer.ipl.wickets && (
                                 <p className="text-green-400 mt-2 text-sm">{currentPlayer.ipl.wickets} wickets | {currentPlayer.ipl.economy} eco</p>
                               )}
@@ -509,8 +526,8 @@ export default function AuctionPage() {
                               <p className="text-base">{currentPlayer.t20i.runs || 0} runs</p>
                               <p className="text-sm opacity-80">{currentPlayer.t20i.avg || 0} average</p>
                               <p className="text-sm opacity-80">{currentPlayer.t20i.sr || 0} strike rate</p>
-                              {currentPlayer.t20i.fifties > 0 && <p className="text-sm opacity-80">{currentPlayer.t20i.fifties} fifties</p>}
-                              {currentPlayer.t20i.hundreds > 0 && <p className="text-sm opacity-80">{currentPlayer.t20i.hundreds} hundreds</p>}
+                              {(currentPlayer.t20i.fifties ?? 0) > 0 && <p className="text-sm opacity-80">{currentPlayer.t20i.fifties} fifties</p>}
+                              {(currentPlayer.t20i.hundreds ?? 0) > 0 && <p className="text-sm opacity-80">{currentPlayer.t20i.hundreds} hundreds</p>}
                               {currentPlayer.role === 'AR' && currentPlayer.t20i.wickets && (
                                 <p className="text-green-400 mt-2 text-sm">{currentPlayer.t20i.wickets} wickets | {currentPlayer.t20i.economy} eco</p>
                               )}

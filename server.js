@@ -148,7 +148,7 @@ app.prepare().then(() => {
         return;
       }
 
-      room.shuffledPlayers = getRandomPlayers(playerCount || 160);
+      room.shuffledPlayers = getRandomPlayers(playerCount || 170);
       room.status = 'auctioning';
       room.currentPlayerIndex = 0;
       room.currentBid = {

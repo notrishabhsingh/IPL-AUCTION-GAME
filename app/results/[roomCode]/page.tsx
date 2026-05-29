@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { getSocket } from '../../../lib/socket';
-import { getPlayerById } from '../../../lib/players';
 
 interface Team {
   id: string;
@@ -18,6 +17,10 @@ interface SoldPlayer {
   id: string;
   name: string;
   role: string;
+  basePrice: number;
+  country: string;
+  ipl: any;
+  t20i: any;
   soldTo: string | null;
   soldFor: number;
 }
@@ -57,6 +60,10 @@ export default function ResultsPage() {
     }
   }, [roomCode]);
 
+  const getPlayerInfo = (playerId: string) => {
+    return soldPlayers.find(p => p.id === playerId);
+  };
+
   const calculateTeamStrength = (team: Team) => {
     let batting = 0;
     let bowling = 0;
@@ -64,20 +71,20 @@ export default function ResultsPage() {
     let wk = 0;
 
     team.squad.forEach(playerId => {
-      const player = getPlayerById(playerId);
+      const player = getPlayerInfo(playerId);
       if (!player) return;
 
       if (player.role === 'BAT') {
-        batting += player.ipl.runs || 0;
+        batting += (player as any).ipl?.runs || 0;
       } else if (player.role === 'BOWL') {
-        bowling += (player.ipl.wickets || 0) * 10;
+        bowling += ((player as any).ipl?.wickets || 0) * 10;
       } else if (player.role === 'AR') {
         allRounders += 1;
-        batting += (player.ipl.runs || 0) * 0.5;
-        bowling += (player.ipl.wickets || 0) * 5;
+        batting += ((player as any).ipl?.runs || 0) * 0.5;
+        bowling += ((player as any).ipl?.wickets || 0) * 5;
       } else if (player.role === 'WK') {
         wk += 1;
-        batting += player.ipl.runs || 0;
+        batting += (player as any).ipl?.runs || 0;
       }
     });
 
@@ -180,8 +187,7 @@ export default function ResultsPage() {
 
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {team.squad.map((playerId) => {
-                    const player = getPlayerById(playerId);
-                    const soldInfo = soldPlayers.find(p => p.id === playerId);
+                    const player = getPlayerInfo(playerId);
                     if (!player) return null;
 
                     return (
@@ -199,7 +205,7 @@ export default function ResultsPage() {
                           </div>
                         </div>
                         <span className="text-[var(--accent-green)] font-bold">
-                          {soldInfo?.soldFor} Cr
+                          {player.soldFor} Cr
                         </span>
                       </div>
                     );
