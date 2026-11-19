@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Press_Start_2P, VT323 } from "next/font/google";
+import RetroBackground from "@/components/RetroBackground";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const pixelFont = Press_Start_2P({
+  weight: "400",
   subsets: ["latin"],
+  variable: "--font-pixel",
+  display: "swap",
+});
+
+const terminalFont = VT323({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-terminal",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "IPL Bid Wars - Play with Friends",
-  description: "Real-time IPL cricket auction game - bid on players with your friends",
+  title: "IPL Bid Wars — 8-Bit Cricket Auction",
+  description: "A retro arcade cricket auction. Bid, build your squad, and dominate with friends.",
 };
 
 export default function RootLayout({
@@ -18,11 +28,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={inter.variable}
-    >
-      <body className="min-h-full">{children}</body>
+    <html lang="en" className={`${pixelFont.variable} ${terminalFont.variable}`}>
+      <body className="min-h-full">
+        <RetroBackground />
+        <div className="relative z-10 min-h-screen">{children}</div>
+      </body>
     </html>
   );
 }
