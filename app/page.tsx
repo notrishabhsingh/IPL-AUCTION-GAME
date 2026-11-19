@@ -3,7 +3,18 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { connectSocket } from '../lib/socket';
+import { connectSocket, getClientId } from '../lib/socket';
+
+interface CreateRoomResponse {
+  success: boolean;
+  roomCode?: string;
+  error?: string;
+}
+
+interface JoinRoomResponse {
+  success: boolean;
+  error?: string;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -37,8 +48,8 @@ export default function Home() {
         });
       }
 
-      socket.emit('create-room', { lobbyName, teamName }, (res: any) => {
-        if (res.success) {
+      socket.emit('create-room', { lobbyName, teamName, clientId: getClientId() }, (res: CreateRoomResponse) => {
+        if (res.success && res.roomCode) {
           router.push(`/lobby/${res.roomCode}`);
         } else {
           setError(res.error || 'Failed to create room');
@@ -46,7 +57,7 @@ export default function Home() {
           createdRef.current = false;
         }
       });
-    } catch (err) {
+    } catch {
       setError('Connection failed');
       setLoading(false);
       createdRef.current = false;
@@ -71,7 +82,7 @@ export default function Home() {
         });
       }
 
-      socket.emit('join-room', { roomCode: roomCode.toUpperCase(), teamName }, (res: any) => {
+      socket.emit('join-room', { roomCode: roomCode.toUpperCase(), teamName, clientId: getClientId() }, (res: JoinRoomResponse) => {
         if (res.success) {
           router.push(`/lobby/${roomCode.toUpperCase()}`);
         } else {
@@ -79,7 +90,7 @@ export default function Home() {
           setLoading(false);
         }
       });
-    } catch (err) {
+    } catch {
       setError('Connection failed');
       setLoading(false);
     }

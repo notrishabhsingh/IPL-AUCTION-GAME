@@ -1,4 +1,7 @@
+// NOTE: the game server (`server.js`) loads `lib/players.js`, not this file.
+// Keep the player lists in both files in sync when editing roster data.
 export type PlayerRole = 'BAT' | 'BOWL' | 'AR' | 'WK';
+export type PlayerEra = 'current' | 'legend';
 
 export interface PlayerStats {
   matches: number;
@@ -21,10 +24,11 @@ export interface Player {
   ipl: PlayerStats;
   t20i: PlayerStats;
   country: string;
-  era?: string;
+  era: PlayerEra;
 }
 
-export const topTierPlayers: Player[] = [
+// Current-era players are stored without an `era` field, then tagged below.
+const topTierPlayersSeed: Omit<Player, 'era'>[] = [
   { id: '1', name: 'Virat Kohli', role: 'BAT', basePrice: 2, ipl: { matches: 252, runs: 9261, avg: 40.09, sr: 131.94, fifties: 74, hundreds: 8 }, t20i: { matches: 125, runs: 4188, avg: 48.70, sr: 137.05, fifties: 38, hundreds: 1 }, country: 'India' },
   { id: '2', name: 'Rohit Sharma', role: 'BAT', basePrice: 2, ipl: { matches: 267, runs: 7329, avg: 29.91, sr: 131.21, fifties: 57, hundreds: 2 }, t20i: { matches: 159, runs: 4312, avg: 32.54, sr: 135.42, fifties: 30, hundreds: 5 }, country: 'India' },
   { id: '3', name: 'MS Dhoni', role: 'WK', basePrice: 2, ipl: { matches: 265, runs: 5439, avg: 38.30, sr: 136.54, fifties: 24, hundreds: 0 }, t20i: { matches: 98, runs: 1617, avg: 36.73, sr: 127.09, fifties: 5, hundreds: 0 }, country: 'India' },
@@ -57,7 +61,7 @@ export const topTierPlayers: Player[] = [
   { id: '30', name: 'Jofra Archer', role: 'BOWL', basePrice: 2, ipl: { matches: 66, wickets: 80, economy: 8.10, bowlAvg: 25.73, bowlSr: 18.60 }, t20i: { matches: 29, wickets: 30, economy: 7.26, bowlAvg: 19.45, bowlSr: 15.00 }, country: 'England' },
 ];
 
-export const premiumPlayers: Player[] = [
+const premiumPlayersSeed: Omit<Player, 'era'>[] = [
   { id: '31', name: 'Mitchell Marsh', role: 'AR', basePrice: 1.5, ipl: { matches: 72, runs: 1795, avg: 30.42, sr: 147.79, wickets: 32, economy: 9.14 }, t20i: { matches: 49, runs: 835, avg: 22.57, sr: 132.22, wickets: 21, economy: 8.26 }, country: 'Australia' },
   { id: '32', name: 'Trent Boult', role: 'BOWL', basePrice: 1.5, ipl: { matches: 125, wickets: 145, economy: 8.49, bowlAvg: 27.13, bowlSr: 19.17 }, t20i: { matches: 44, wickets: 55, economy: 7.73, bowlAvg: 23.45, bowlSr: 16.50 }, country: 'New Zealand' },
   { id: '33', name: 'Quinton de Kock', role: 'WK', basePrice: 1.5, ipl: { matches: 107, runs: 3594, avg: 33.27, sr: 137.56, fifties: 25, hundreds: 4 }, t20i: { matches: 63, runs: 1768, avg: 30.48, sr: 136.70, fifties: 10, hundreds: 1 }, country: 'South Africa' },
@@ -100,7 +104,7 @@ export const premiumPlayers: Player[] = [
   { id: '70', name: 'Abhishek Sharma', role: 'AR', basePrice: 1.5, ipl: { matches: 91, runs: 2379, avg: 29.74, sr: 151.42, wickets: 11, economy: 8.42, bowlAvg: 50.00, bowlSr: 31.50 }, t20i: { matches: 18, runs: 420, avg: 26.25, sr: 155.32, wickets: 5, economy: 8.50 }, country: 'India' },
 ];
 
-export const midTierPlayers: Player[] = [
+const midTierPlayersSeed: Omit<Player, 'era'>[] = [
   { id: '71', name: 'Shardul Thakur', role: 'BOWL', basePrice: 1, ipl: { matches: 113, wickets: 117, economy: 9.56, bowlAvg: 29.68, bowlSr: 18.61 }, t20i: { matches: 26, wickets: 21, economy: 8.84, bowlAvg: 32.56, bowlSr: 20.42 }, country: 'India' },
   { id: '72', name: 'Umesh Yadav', role: 'BOWL', basePrice: 1, ipl: { matches: 147, wickets: 144, economy: 8.49, bowlAvg: 29.97, bowlSr: 21.18 }, t20i: { matches: 34, wickets: 17, economy: 8.71, bowlAvg: 32.50, bowlSr: 21.22 }, country: 'India' },
   { id: '73', name: 'Jaydev Unadkat', role: 'BOWL', basePrice: 1, ipl: { matches: 116, wickets: 114, economy: 8.94, bowlAvg: 30.73, bowlSr: 20.62 }, t20i: { matches: 10, wickets: 8, economy: 8.89, bowlAvg: 34.50, bowlSr: 22.00 }, country: 'India' },
@@ -153,7 +157,7 @@ export const midTierPlayers: Player[] = [
   { id: '120', name: 'Shahbaz Ahmed', role: 'AR', basePrice: 1, ipl: { matches: 38, runs: 405, avg: 19.29, sr: 119.47, wickets: 28, economy: 7.85, bowlAvg: 32.45, bowlSr: 25.60 }, t20i: { matches: 3, runs: 22, avg: 11.00, sr: 100.00, wickets: 0, economy: 8.50 }, country: 'India' },
 ];
 
-export const budgetPlayers: Player[] = [
+const budgetPlayersSeed: Omit<Player, 'era'>[] = [
   { id: '121', name: 'Prabhsimran Singh', role: 'WK', basePrice: 0.5, ipl: { matches: 42, runs: 1028, avg: 26.36, sr: 148.50, fifties: 7, hundreds: 1 }, t20i: { matches: 2, runs: 21, avg: 10.50, sr: 105.00, fifties: 0, hundreds: 0 }, country: 'India' },
   { id: '122', name: 'Jitesh Sharma', role: 'WK', basePrice: 0.5, ipl: { matches: 38, runs: 765, avg: 25.50, sr: 141.47, fifties: 5, hundreds: 0 }, t20i: { matches: 12, runs: 152, avg: 15.33, sr: 126.03, fifties: 0, hundreds: 0 }, country: 'India' },
   { id: '123', name: 'Dhruv Jurel', role: 'WK', basePrice: 0.5, ipl: { matches: 30, runs: 625, avg: 27.17, sr: 129.64, fifties: 4, hundreds: 0 }, t20i: { matches: 6, runs: 78, avg: 19.50, sr: 118.18, fifties: 0, hundreds: 0 }, country: 'India' },
@@ -206,7 +210,18 @@ export const budgetPlayers: Player[] = [
   { id: '170', name: 'Arshin Kulkarni', role: 'AR', basePrice: 0.5, ipl: { matches: 8, runs: 95, avg: 15.83, sr: 122.45, wickets: 4, economy: 8.98, bowlAvg: 36.50, bowlSr: 24.50 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0, wickets: 0, economy: 0 }, country: 'India' },
 ];
 
+const tagCurrentEra = (players: Omit<Player, 'era'>[]): Player[] =>
+  players.map((player) => ({ ...player, era: 'current' }));
+
+export const topTierPlayers: Player[] = tagCurrentEra(topTierPlayersSeed);
+export const premiumPlayers: Player[] = tagCurrentEra(premiumPlayersSeed);
+export const midTierPlayers: Player[] = tagCurrentEra(midTierPlayersSeed);
+export const budgetPlayers: Player[] = tagCurrentEra(budgetPlayersSeed);
+
+// ─── ALL-TIME LEGENDS ────────────────────────────────────────────────────────
+
 export const legendPlayers: Player[] = [
+  // Indian Legends
   { id: 'L1', name: 'Sachin Tendulkar', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 78, runs: 2334, avg: 34.83, sr: 119.82, fifties: 13, hundreds: 1 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
   { id: 'L2', name: 'Sourav Ganguly', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 59, runs: 1349, avg: 26.45, sr: 116.76, fifties: 7, hundreds: 0 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
   { id: 'L3', name: 'Rahul Dravid', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 89, runs: 2174, avg: 31.97, sr: 110.56, fifties: 13, hundreds: 0 }, t20i: { matches: 0, runs: 0, avg: 0, sr: 0 }, country: 'India' },
@@ -218,6 +233,7 @@ export const legendPlayers: Player[] = [
   { id: 'L9', name: 'Gautam Gambhir', role: 'BAT', basePrice: 1.5, era: 'legend', ipl: { matches: 154, runs: 4217, avg: 31.23, sr: 123.89, fifties: 34, hundreds: 0 }, t20i: { matches: 37, runs: 932, avg: 27.41, sr: 119.24, fifties: 7, hundreds: 0 }, country: 'India' },
   { id: 'L10', name: 'Suresh Raina', role: 'AR', basePrice: 2, era: 'legend', ipl: { matches: 205, runs: 5528, avg: 32.52, sr: 136.76, wickets: 36, economy: 7.46, fifties: 39, hundreds: 1 }, t20i: { matches: 78, runs: 1605, avg: 29.18, sr: 134.87, wickets: 28, economy: 7.86, fifties: 10, hundreds: 0 }, country: 'India' },
   { id: 'L11', name: 'Irfan Pathan', role: 'AR', basePrice: 1.5, era: 'legend', ipl: { matches: 96, runs: 1144, avg: 17.87, sr: 118.47, wickets: 76, economy: 7.57, bowlAvg: 26.49, bowlSr: 20.96 }, t20i: { matches: 24, runs: 172, avg: 10.75, sr: 100.00, wickets: 28, economy: 7.68, bowlAvg: 19.32, bowlSr: 15.07 }, country: 'India' },
+  // Foreign Legends
   { id: 'L12', name: 'AB de Villiers', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 184, runs: 5162, avg: 39.70, sr: 151.69, fifties: 40, hundreds: 3 }, t20i: { matches: 78, runs: 1672, avg: 26.46, sr: 134.87, fifties: 10, hundreds: 0 }, country: 'South Africa' },
   { id: 'L13', name: 'Chris Gayle', role: 'BAT', basePrice: 2, era: 'legend', ipl: { matches: 141, runs: 4954, avg: 40.11, sr: 149.70, fifties: 36, hundreds: 6 }, t20i: { matches: 58, runs: 1899, avg: 38.76, sr: 145.42, fifties: 14, hundreds: 2 }, country: 'West Indies' },
   { id: 'L14', name: 'Kieron Pollard', role: 'AR', basePrice: 2, era: 'legend', ipl: { matches: 203, runs: 3417, avg: 28.22, sr: 137.98, wickets: 35, economy: 8.63, fifties: 17, hundreds: 0 }, t20i: { matches: 90, runs: 1368, avg: 22.44, sr: 135.40, wickets: 16, economy: 7.78 }, country: 'West Indies' },
@@ -239,11 +255,37 @@ export const legendPlayers: Player[] = [
   { id: 'L30', name: 'Ricky Ponting', role: 'BAT', basePrice: 1.5, era: 'legend', ipl: { matches: 66, runs: 1444, avg: 27.24, sr: 117.84, fifties: 11, hundreds: 0 }, t20i: { matches: 17, runs: 401, avg: 26.73, sr: 111.97, fifties: 3, hundreds: 0 }, country: 'Australia' },
 ];
 
-export const allPlayers = [...topTierPlayers, ...premiumPlayers, ...midTierPlayers, ...budgetPlayers, ...legendPlayers];
+// ─── COMBINED DATA ───────────────────────────────────────────────────────────
 
-export function getRandomPlayers(count: number): Player[] {
-  const shuffled = [...allPlayers].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+export const currentPlayers: Player[] = [
+  ...topTierPlayers,
+  ...premiumPlayers,
+  ...midTierPlayers,
+  ...budgetPlayers,
+];
+
+export const allPlayers: Player[] = [...currentPlayers, ...legendPlayers];
+
+// ─── UTILITY FUNCTIONS ───────────────────────────────────────────────────────
+
+export function getRandomPlayers(
+  count: number,
+  era: 'current' | 'legend' | 'mixed' = 'mixed'
+): Player[] {
+  let pool: Player[];
+  if (era === 'current') {
+    pool = [...currentPlayers];
+  } else if (era === 'legend') {
+    // Always include all legends + fill rest with top current players
+    const legends = [...legendPlayers];
+    const topCurrent = [...topTierPlayers, ...premiumPlayers];
+    pool = [...legends, ...topCurrent];
+  } else {
+    // Mixed: all legends + all current
+    pool = [...allPlayers];
+  }
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, pool.length));
 }
 
 export function getPlayerById(id: string): Player | undefined {

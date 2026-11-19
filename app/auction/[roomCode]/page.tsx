@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { connectSocket, disconnectSocket, getSocket } from '../../../lib/socket';
+import { getSocket, getClientId } from '../../../lib/socket';
+
+const BID_TIMER_SECONDS = 10;
 
 interface Player {
   id: string;
@@ -21,6 +23,7 @@ interface Team {
   purse: number;
   squad: string[];
   isActive: boolean;
+  connected: boolean;
 }
 
 interface BidHistory {
@@ -36,22 +39,85 @@ interface Room {
   isPaused: boolean;
 }
 
+interface CurrentBid {
+  amount: number;
+  bidderId: string | null;
+  bidderName: string | null;
+}
+
+interface AuctionRoom {
+  status: string;
+  hostId: string;
+  isPaused: boolean;
+  teams: Team[];
+  bidHistory: BidHistory[];
+  shuffledPlayers: Player[];
+  currentPlayerIndex: number;
+  currentBid: CurrentBid;
+  timerDuration: number;
+  timerStart: number | null;
+  pausedTimeLeft: number | null;
+}
+
+type RoomStateResponse =
+  | { success: true; room: AuctionRoom }
+  | { success: false; error?: string };
+
+interface AckResult {
+  success: boolean;
+  error?: string;
+}
+
+interface BidPlacedPayload {
+  currentBid: CurrentBid;
+  timerDuration: number;
+  currentPlayerIndex?: number;
+  bidHistory?: BidHistory[];
+}
+
+interface NextPlayerPayload {
+  player: Player;
+  currentBid: CurrentBid;
+  timerDuration: number;
+  currentPlayerIndex?: number;
+  teams: Team[];
+  bidHistory?: BidHistory[];
+}
+
+interface AuctionPausedPayload {
+  isPaused: boolean;
+  timeLeft?: number;
+  timerDuration?: number;
+}
+
+interface TeamPassedPayload {
+  teamId: string;
+}
+
+interface RoomUpdatedPayload {
+  hostId: string;
+  isPaused?: boolean;
+  teams: Team[];
+}
+
 export default function AuctionPage() {
   const params = useParams();
   const router = useRouter();
   const roomCode = params.roomCode as string;
 
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [currentBid, setCurrentBid] = useState<{ amount: number; bidderId: string | null; bidderName: string | null }>({ amount: 0, bidderId: null, bidderName: null });
+  const [currentBid, setCurrentBid] = useState<CurrentBid>({ amount: 0, bidderId: null, bidderName: null });
   const [teams, setTeams] = useState<Team[]>([]);
   const [bidHistory, setBidHistory] = useState<BidHistory[]>([]);
   const [timeLeft, setTimeLeft] = useState(10);
   const [customBid, setCustomBid] = useState('');
   const [error, setError] = useState('');
-  const [socket, setSocket] = useState<any>(null);
+  const [socket] = useState<ReturnType<typeof getSocket> | null>(
+    () => (typeof window === 'undefined' ? null : getSocket())
+  );
   const [loading, setLoading] = useState(true);
   const [playerCount, setPlayerCount] = useState(0);
-  const [soldPlayers, setSoldPlayers] = useState<any[]>([]);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [roomInfo, setRoomInfo] = useState<Room>({ hostId: '', isPaused: false });
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
@@ -71,14 +137,13 @@ export default function AuctionPage() {
 
   useEffect(() => {
     const s = getSocket();
-    setSocket(s);
 
     if (!s.connected) {
       s.connect();
     }
 
     const handleConnect = () => {
-      s.emit('get-room-state', (res: any) => {
+      s.emit('get-room-state', { roomCode, clientId: getClientId() }, (res: RoomStateResponse) => {
         if (res.success) {
           if (res.room.status === 'finished') {
             router.push(`/results/${roomCode}`);
@@ -88,41 +153,56 @@ export default function AuctionPage() {
             router.push(`/lobby/${roomCode}`);
             return;
           }
+          const duration = res.room.timerDuration || BID_TIMER_SECONDS;
+          let remaining = duration;
+          if (res.room.isPaused && typeof res.room.pausedTimeLeft === 'number') {
+            remaining = res.room.pausedTimeLeft;
+          } else if (res.room.timerStart) {
+            const elapsed = (Date.now() - res.room.timerStart) / 1000;
+            remaining = Math.max(0, Math.ceil(duration - elapsed));
+          }
+
           setRoomInfo({ hostId: res.room.hostId, isPaused: res.room.isPaused || false });
           setTeams(res.room.teams);
           setBidHistory(res.room.bidHistory || []);
           setAllPlayers(res.room.shuffledPlayers || []);
           setPlayerCount(res.room.shuffledPlayers?.length || 0);
+          setCurrentPlayerIndex(res.room.currentPlayerIndex || 0);
 
           if (res.room.currentPlayerIndex < res.room.shuffledPlayers.length) {
             setCurrentPlayer(res.room.shuffledPlayers[res.room.currentPlayerIndex]);
             setCurrentBid(res.room.currentBid);
-            setTimeLeft(res.room.timerDuration);
+            setTimeLeft(Math.ceil(remaining));
           }
         }
         setLoading(false);
       });
     };
 
+    s.on('connect', handleConnect);
     if (s.connected) {
       handleConnect();
-    } else {
-      s.once('connect', handleConnect);
     }
 
-    s.on('bid-placed', (data: any) => {
+    s.on('bid-placed', (data: BidPlacedPayload) => {
       setCurrentBid(data.currentBid);
       setTimeLeft(data.timerDuration);
+      if (typeof data.currentPlayerIndex === 'number') {
+        setCurrentPlayerIndex(data.currentPlayerIndex);
+      }
       if (data.bidHistory) {
         setBidHistory(data.bidHistory);
       }
     });
 
-    s.on('next-player', (data: any) => {
+    s.on('next-player', (data: NextPlayerPayload) => {
       setCurrentPlayer(data.player);
       setCurrentBid(data.currentBid);
       setTimeLeft(data.timerDuration);
       setTeams(data.teams);
+      if (typeof data.currentPlayerIndex === 'number') {
+        setCurrentPlayerIndex(data.currentPlayerIndex);
+      }
       if (data.bidHistory) {
         setBidHistory(data.bidHistory);
       }
@@ -133,20 +213,37 @@ export default function AuctionPage() {
       router.push(`/results/${roomCode}`);
     });
 
-    s.on('team-passed', (data: any) => {
+    s.on('team-passed', (data: TeamPassedPayload) => {
       setTeams(prev => prev.map(t => t.id === data.teamId ? { ...t, isActive: false } : t));
     });
 
-    s.on('auction-paused', (data: any) => {
+    s.on('auction-paused', (data: AuctionPausedPayload) => {
       setRoomInfo(prev => ({ ...prev, isPaused: data.isPaused }));
+      if (typeof data.timeLeft === 'number') {
+        setTimeLeft(Math.ceil(data.timeLeft));
+      }
+      if (!data.isPaused && typeof data.timerDuration === 'number') {
+        setTimeLeft(Math.ceil(data.timerDuration));
+      }
+    });
+
+    s.on('room-updated', (updatedRoom: RoomUpdatedPayload) => {
+      if (!updatedRoom) return;
+      setTeams(updatedRoom.teams);
+      setRoomInfo({
+        hostId: updatedRoom.hostId,
+        isPaused: updatedRoom.isPaused || false,
+      });
     });
 
     return () => {
+      s.off('connect', handleConnect);
       s.off('bid-placed');
       s.off('next-player');
       s.off('auction-ended');
       s.off('team-passed');
       s.off('auction-paused');
+      s.off('room-updated');
     };
   }, [roomCode, router]);
 
@@ -168,20 +265,6 @@ export default function AuctionPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [loading, roomInfo.isPaused]);
-
-  useEffect(() => {
-    if (timeLeft === 0 && !loading && currentPlayer && !roomInfo.isPaused) {
-      // Give 3 seconds before auto-selling to see result
-      const timeout = setTimeout(() => {
-        socket?.emit('sell-player', { roomCode }, (res: any) => {
-          if (res?.auctionEnded) {
-            router.push(`/results/${roomCode}`);
-          }
-        });
-      }, 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [timeLeft, loading, currentPlayer, socket, router, roomCode, roomInfo.isPaused]);
 
   const getBidIncrement = (amount: number) => {
     if (amount >= 20) {
@@ -207,38 +290,40 @@ export default function AuctionPage() {
   };
 
   const handlePause = () => {
-    console.log('Attempting to pause auction, socket id:', socket?.id, 'roomCode:', roomCode);
-    socket?.emit('pause-auction', { roomCode }, (res: any) => {
-      console.log('Pause response:', res);
-      if (!res.success) {
-        setError(res.error);
+    socket?.emit('pause-auction', { roomCode }, (res: AckResult) => {
+      if (!res?.success) {
+        setError(res?.error || 'Could not pause auction');
       }
     });
   };
 
   const handleResume = () => {
-    console.log('Attempting to resume auction, socket id:', socket?.id, 'roomCode:', roomCode);
-    socket?.emit('resume-auction', { roomCode }, (res: any) => {
-      console.log('Resume response:', res);
-      if (!res.success) {
-        setError(res.error);
+    socket?.emit('resume-auction', { roomCode }, (res: AckResult) => {
+      if (!res?.success) {
+        setError(res?.error || 'Could not resume auction');
       }
     });
   };
 
   const handleEndAuction = () => {
     if (confirm('Are you sure you want to end the auction?')) {
-      console.log('Attempting to end auction, socket id:', socket?.id, 'roomCode:', roomCode);
-      socket?.emit('end-auction', { roomCode }, (res: any) => {
-        console.log('End auction response:', res);
-        if (!res.success) {
-          setError(res.error);
+      socket?.emit('end-auction', { roomCode }, (res: AckResult) => {
+        if (!res?.success) {
+          setError(res?.error || 'Could not end auction');
         }
       });
     }
   };
 
   const handleBid = (amount: number) => {
+    const team = teams.find(t => t.id === socket?.id);
+    if (!team) return;
+
+    if (!team.isActive) {
+      setError('You passed on this player');
+      return;
+    }
+
     // Prevent own team from bidding twice in a row
     if (currentBid.bidderId === socket?.id) {
       setError('You already have the highest bid. Wait for another team to bid.');
@@ -250,18 +335,15 @@ export default function AuctionPage() {
       return;
     }
 
-    const myTeam = teams.find(t => t.id === socket?.id);
-    if (!myTeam) return;
-
-    if (amount > myTeam.purse) {
+    if (amount > team.purse) {
       setError('Insufficient funds');
       return;
     }
 
     setError('');
-    socket?.emit('place-bid', { amount, roomCode }, (res: any) => {
-      if (!res.success) {
-        setError(res.error);
+    socket?.emit('place-bid', { amount, roomCode }, (res: AckResult) => {
+      if (!res?.success) {
+        setError(res?.error || 'Bid failed');
       }
     });
   };
@@ -277,9 +359,9 @@ export default function AuctionPage() {
   };
 
   const handlePass = () => {
-    socket?.emit('pass', { roomCode }, (res: any) => {
-      if (!res.success) {
-        setError(res.error);
+    socket?.emit('pass', { roomCode }, (res: AckResult) => {
+      if (!res?.success) {
+        setError(res?.error || 'Could not pass');
       }
     });
   };
@@ -305,7 +387,23 @@ export default function AuctionPage() {
   };
 
   const myTeam = teams.find(t => t.id === socket?.id);
-  const currentBidderTeam = teams.find(t => t.id === currentBid.bidderId);
+  const isMyBid = currentBid.bidderId === socket?.id;
+  const cannotBid = !myTeam || !myTeam.isActive || isMyBid;
+
+  const formatCr = (value: number) => {
+    const rounded = Number(value.toFixed(2));
+    return rounded >= 1 ? `${rounded} Cr` : `${Math.round(rounded * 100)}L`;
+  };
+
+  // Quick-bid targets always respect the server's current minimum increment.
+  const quickBids = currentPlayer
+    ? Array.from(new Set(
+        [0.2, 0.5, 1, 2].map(increment => {
+          const base = currentBid.amount === 0 ? currentPlayer.basePrice : currentBid.amount;
+          return Math.max(Number((base + increment).toFixed(2)), getMinBid());
+        })
+      ))
+    : [];
 
   if (loading) {
     return (
@@ -324,7 +422,9 @@ export default function AuctionPage() {
         </div>
         <div className="text-right">
           <p className="text-[var(--text-muted)]">Player</p>
-          <p className="text-white font-semibold">{playerCount - (teams.reduce((acc, t) => acc + t.squad.length, 0) + soldPlayers.length)} / {playerCount}</p>
+          <p className="text-white font-semibold">
+            {playerCount > 0 ? Math.min(currentPlayerIndex + 1, playerCount) : 0} / {playerCount}
+          </p>
         </div>
         {socket?.id === roomInfo.hostId && (
           <div className="flex items-center gap-2 ml-4">
@@ -412,6 +512,9 @@ export default function AuctionPage() {
                     )}
                   </div>
                 )}
+                {team.connected === false && (
+                  <div className="mt-2 text-xs text-[var(--text-muted)]">Disconnected</div>
+                )}
                 {!team.isActive && (
                   <div className="mt-2 text-xs text-[var(--accent-red)]">Passed</div>
                 )}
@@ -451,7 +554,7 @@ export default function AuctionPage() {
                       strokeWidth="8"
                       strokeLinecap="round"
                       strokeDasharray={283}
-                      strokeDashoffset={283 * (1 - timeLeft / 45)}
+                      strokeDashoffset={283 * (1 - Math.min(timeLeft, BID_TIMER_SECONDS) / BID_TIMER_SECONDS)}
                       className="timer-ring transition-all"
                     />
                   </svg>
@@ -564,33 +667,27 @@ export default function AuctionPage() {
 
                 {/* Bid Controls */}
                 <div className="w-full max-w-lg">
-                  {currentBid.bidderId === socket?.id && (
+                  {isMyBid && (
                     <div className="mb-4 p-3 bg-[var(--accent-gold)]/20 rounded-xl text-center text-[var(--accent-gold)] font-semibold">
                       You have the highest bid! Wait for others to outbid.
                     </div>
                   )}
-                  <div className="grid grid-cols-4 gap-2 mb-4">
-                    {[
-                      { label: '+20L', increment: 0.2 },
-                      { label: '+50L', increment: 0.5 },
-                      { label: '+1Cr', increment: 1 },
-                      { label: '+2Cr', increment: 2 }
-                    ].map(({ label, increment }) => {
-                      const bidAmount = currentBid.amount === 0
-                        ? currentPlayer.basePrice + increment
-                        : currentBid.amount + increment;
-                      const isMyBid = currentBid.bidderId === socket?.id;
-                      return (
-                        <button
-                          key={label}
-                          onClick={() => handleBid(bidAmount)}
-                          className={`py-3 rounded-xl transition-colors font-semibold ${isMyBid ? 'bg-gray-600 cursor-not-allowed' : 'bg-[var(--bg-card)] hover:bg-[var(--accent-purple)]'}`}
-                          disabled={isMyBid || (myTeam && myTeam.purse < bidAmount)}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
+                  {myTeam && !myTeam.isActive && (
+                    <div className="mb-4 p-3 bg-[var(--accent-red)]/20 rounded-xl text-center text-[var(--accent-red)] font-semibold">
+                      You passed on this player.
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    {quickBids.map((bidAmount) => (
+                      <button
+                        key={bidAmount}
+                        onClick={() => handleBid(bidAmount)}
+                        className={`py-3 rounded-xl transition-colors font-semibold ${cannotBid ? 'bg-gray-600 cursor-not-allowed' : 'bg-[var(--bg-card)] hover:bg-[var(--accent-purple)]'}`}
+                        disabled={cannotBid || (myTeam ? myTeam.purse < bidAmount : true)}
+                      >
+                        {formatCr(bidAmount)}
+                      </button>
+                    ))}
                   </div>
 
                   <div className="flex gap-2 mb-4">
@@ -599,19 +696,20 @@ export default function AuctionPage() {
                       value={customBid}
                       onChange={(e) => setCustomBid(e.target.value)}
                       placeholder={`Min: ${getMinBid()} Cr`}
-                      disabled={currentBid.bidderId === socket?.id}
+                      disabled={cannotBid}
                       className="flex-1 p-4 rounded-xl bg-[var(--bg-card)] text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-purple)] disabled:opacity-50"
                     />
                     <button
                       onClick={handleCustomBid}
-                      disabled={currentBid.bidderId === socket?.id}
+                      disabled={cannotBid}
                       className="py-4 px-6 rounded-xl bg-[var(--accent-purple)] hover:bg-[var(--accent-purple-light)] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       BID
                     </button>
                     <button
                       onClick={handlePass}
-                      className="py-4 px-6 rounded-xl border-2 border-[var(--accent-red)] text-[var(--accent-red)] hover:bg-[var(--accent-red)] hover:text-white transition-colors font-semibold"
+                      disabled={!myTeam || !myTeam.isActive}
+                      className="py-4 px-6 rounded-xl border-2 border-[var(--accent-red)] text-[var(--accent-red)] hover:bg-[var(--accent-red)] hover:text-white transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       PASS
                     </button>
@@ -621,7 +719,7 @@ export default function AuctionPage() {
                     <p className="text-[var(--accent-red)] text-center">{error}</p>
                   )}
 
-                  {myTeam && myTeam.purse < getMinBid() && (
+                  {myTeam && myTeam.isActive && myTeam.purse < getMinBid() && (
                     <p className="text-[var(--accent-red)] text-center">Insufficient funds to bid!</p>
                   )}
                 </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { getSocket } from '../../../lib/socket';
+import { getSocket, getClientId } from '../../../lib/socket';
 
 interface Team {
   id: string;
@@ -13,17 +13,39 @@ interface Team {
   isActive: boolean;
 }
 
+interface PlayerStats {
+  matches?: number;
+  runs?: number;
+  wickets?: number;
+  avg?: number;
+  sr?: number;
+  economy?: number;
+  fifties?: number;
+  hundreds?: number;
+  bowlAvg?: number;
+  bowlSr?: number;
+}
+
 interface SoldPlayer {
   id: string;
   name: string;
   role: string;
   basePrice: number;
   country: string;
-  ipl: any;
-  t20i: any;
+  ipl: PlayerStats;
+  t20i: PlayerStats;
   soldTo: string | null;
   soldFor: number;
 }
+
+interface ResultsRoom {
+  teams: Team[];
+  soldPlayers: SoldPlayer[];
+}
+
+type RoomStateResponse =
+  | { success: true; room: ResultsRoom }
+  | { success: false; error?: string };
 
 export default function ResultsPage() {
   const params = useParams();
@@ -33,32 +55,35 @@ export default function ResultsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [soldPlayers, setSoldPlayers] = useState<SoldPlayer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState<any>(null);
 
   useEffect(() => {
     const s = getSocket();
-    setSocket(s);
 
     if (!s.connected) {
       s.connect();
     }
 
     const handleConnect = () => {
-      s.emit('get-room-state', (res: any) => {
+      s.emit('get-room-state', { roomCode, clientId: getClientId() }, (res: RoomStateResponse) => {
         if (res.success) {
           setTeams(res.room.teams);
           setSoldPlayers(res.room.soldPlayers || []);
+        } else {
+          router.push('/');
         }
         setLoading(false);
       });
     };
 
+    s.on('connect', handleConnect);
     if (s.connected) {
       handleConnect();
-    } else {
-      s.once('connect', handleConnect);
     }
-  }, [roomCode]);
+
+    return () => {
+      s.off('connect', handleConnect);
+    };
+  }, [roomCode, router]);
 
   const getPlayerInfo = (playerId: string) => {
     return soldPlayers.find(p => p.id === playerId);
@@ -75,16 +100,16 @@ export default function ResultsPage() {
       if (!player) return;
 
       if (player.role === 'BAT') {
-        batting += (player as any).ipl?.runs || 0;
+        batting += player.ipl?.runs || 0;
       } else if (player.role === 'BOWL') {
-        bowling += ((player as any).ipl?.wickets || 0) * 10;
+        bowling += (player.ipl?.wickets || 0) * 10;
       } else if (player.role === 'AR') {
         allRounders += 1;
-        batting += ((player as any).ipl?.runs || 0) * 0.5;
-        bowling += ((player as any).ipl?.wickets || 0) * 5;
+        batting += (player.ipl?.runs || 0) * 0.5;
+        bowling += (player.ipl?.wickets || 0) * 5;
       } else if (player.role === 'WK') {
         wk += 1;
-        batting += (player as any).ipl?.runs || 0;
+        batting += player.ipl?.runs || 0;
       }
     });
 

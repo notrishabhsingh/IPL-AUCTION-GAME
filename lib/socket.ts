@@ -28,6 +28,23 @@ export const connectSocket = (): Socket => {
   return s;
 };
 
+const CLIENT_ID_KEY = 'ipl-bid-wars-client-id';
+
+// Stable per-browser id used to recover your team after a refresh or a
+// dropped connection (socket ids change on reconnect).
+export const getClientId = (): string => {
+  if (typeof window === 'undefined') return '';
+
+  let id = window.localStorage.getItem(CLIENT_ID_KEY);
+  if (!id) {
+    id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(CLIENT_ID_KEY, id);
+  }
+  return id;
+};
+
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();

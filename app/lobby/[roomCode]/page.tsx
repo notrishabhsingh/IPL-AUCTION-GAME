@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getSocket, connectSocket, disconnectSocket } from '../../../lib/socket';
+import { getSocket, getClientId } from '../../../lib/socket';
 
 interface Team {
   id: string;
@@ -11,6 +11,7 @@ interface Team {
   purse: number;
   squad: string[];
   isActive: boolean;
+  connected: boolean;
 }
 
 interface Room {
@@ -21,6 +22,15 @@ interface Room {
   status: string;
 }
 
+type RoomStateResponse =
+  | { success: true; room: Room }
+  | { success: false; error?: string };
+
+interface AckResult {
+  success: boolean;
+  error?: string;
+}
+
 export default function LobbyPage() {
   const params = useParams();
   const router = useRouter();
@@ -28,22 +38,25 @@ export default function LobbyPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [playerCount, setPlayerCount] = useState(200);
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState<any>(null);
+  const [socket] = useState<ReturnType<typeof getSocket> | null>(
+    () => (typeof window === 'undefined' ? null : getSocket())
+  );
 
   useEffect(() => {
     const s = getSocket();
-    setSocket(s);
 
     if (!s.connected) {
       s.connect();
     }
 
     const handleConnect = () => {
-      s.emit('get-room-state', (res: any) => {
+      s.emit('get-room-state', { roomCode, clientId: getClientId() }, (res: RoomStateResponse) => {
         if (res.success) {
           setRoom(res.room);
           if (res.room.status === 'auctioning') {
             router.push(`/auction/${roomCode}`);
+          } else if (res.room.status === 'finished') {
+            router.push(`/results/${roomCode}`);
           }
         } else {
           router.push('/');
@@ -52,10 +65,9 @@ export default function LobbyPage() {
       });
     };
 
+    s.on('connect', handleConnect);
     if (s.connected) {
       handleConnect();
-    } else {
-      s.once('connect', handleConnect);
     }
 
     s.on('room-updated', (updatedRoom: Room) => {
@@ -67,6 +79,7 @@ export default function LobbyPage() {
     });
 
     return () => {
+      s.off('connect', handleConnect);
       s.off('room-updated');
       s.off('auction-started');
     };
@@ -81,7 +94,7 @@ export default function LobbyPage() {
       });
     }
 
-    s.emit('start-auction', { playerCount }, (res: any) => {
+    s.emit('start-auction', { playerCount }, (res: AckResult) => {
       if (res.success) {
         router.push(`/auction/${roomCode}`);
       } else {
@@ -98,8 +111,8 @@ export default function LobbyPage() {
     );
   }
 
-  const myTeam = room?.teams.find(t => t.id === socket?.id);
   const isHost = room?.hostId === socket?.id;
+  const connectedTeams = room?.teams.filter(t => t.connected !== false) || [];
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-4 relative overflow-hidden">
@@ -153,14 +166,14 @@ export default function LobbyPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ delay: index * 0.1 }}
-                className={`glass-card rounded-xl p-6 text-center ${team.id === socket?.id ? 'ring-2 ring-[var(--accent-gold)]' : ''}`}
+                className={`glass-card rounded-xl p-6 text-center ${team.id === socket?.id ? 'ring-2 ring-[var(--accent-gold)]' : ''} ${team.connected === false ? 'opacity-50' : ''}`}
               >
                 <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[var(--accent-purple)] flex items-center justify-center text-2xl font-bold">
                   {team.name.charAt(0).toUpperCase()}
                 </div>
                 <h3 className="font-semibold text-lg">{team.name}</h3>
                 <p className="text-[var(--text-muted)] text-sm mt-1">
-                  {team.id === socket?.id ? 'You' : 'Joined'}
+                  {team.id === socket?.id ? 'You' : team.connected === false ? 'Disconnected' : 'Joined'}
                 </p>
               </motion.div>
             ))}
@@ -176,7 +189,7 @@ export default function LobbyPage() {
           ))}
         </div>
 
-        {isHost && room && room.teams.length >= 2 && (
+        {isHost && room && connectedTeams.length >= 2 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -188,7 +201,7 @@ export default function LobbyPage() {
             >
               Start Auction 🚀
             </button>
-            <p className="text-[var(--text-muted)] mt-3">Need at least 2 teams to start</p>
+            <p className="text-[var(--text-muted)] mt-3">Need at least 2 connected teams to start</p>
           </motion.div>
         )}
 
